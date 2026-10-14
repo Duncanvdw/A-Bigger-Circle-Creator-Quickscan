@@ -1,16 +1,16 @@
-Deze map is nu nog leeg. Zodra de officiële bestanden van A Bigger Circle
-beschikbaar zijn, hier plaatsen en de verwijzingen bijwerken:
+Zodra de officiële bestanden van A Bigger Circle beschikbaar zijn, hier
+in de projectmap plaatsen en de verwijzingen bijwerken:
 
 1. Logo
    - Plaats het logobestand hier (bv. logo.svg).
-   - Vervang in js/app.js de functie renderHeader(): de regel met
-     `BRAND.wordmark.map(...)` door een <img src="assets/logo.svg" ...>.
+   - Vervang in app.js de functie renderHeader(): de regel met
+     `BRAND.wordmark.map(...)` door een <img src="logo.svg" ...>.
    - Nu wordt het logo nagebouwd als tekst ("A / Bigger / Circle") in
      Oswald, als tijdelijke vervanging.
 
 2. Lettertype "Obviously"
    - Plaats de fontbestanden hier (bv. obviously-condensed-bold.woff2, enz.).
-   - Voeg in css/style.css @font-face regels toe die naar deze bestanden
+   - Voeg in style.css @font-face regels toe die naar deze bestanden
      verwijzen en vervang de waarden van --font-display en --font-body.
    - Nu worden Oswald en Work Sans (Google Fonts) gebruikt als
      visueel vergelijkbare tijdelijke vervanging (condensed/bold voor

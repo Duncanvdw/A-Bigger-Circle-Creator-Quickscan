@@ -18,11 +18,11 @@ en open de getoonde localhost-URL.
 ## Bestanden
 
 - `index.html` — basis-HTML (laadt de fonts, CSS en JS).
-- `css/style.css` — alle styling, met de ABC-kleuren als CSS-variabelen.
-- `js/content.js` — alle teksten, vragen, scoreregels en voorbeeldadvies-
+- `style.css` — alle styling, met de ABC-kleuren als CSS-variabelen.
+- `content.js` — alle teksten, vragen, scoreregels en voorbeeldadvies-
   /creatorprofielteksten.
-- `js/app.js` — de applicatielogica (navigatie, scoring, matching, render).
-- `assets/LEESMIJ.txt` — uitleg waar het echte logo en de "Obviously"-
+- `app.js` — de applicatielogica (navigatie, scoring, matching, render).
+- `LEESMIJ.txt` — uitleg waar het echte logo en de "Obviously"-
   fontbestanden moeten komen zodra ze beschikbaar zijn.
 
 ## Status t.o.v. de briefing — Fase 1 (klaar)
@@ -44,7 +44,7 @@ en open de getoonde localhost-URL.
 - Responsive voor mobiel en desktop.
 
 De exacte grenzen tussen scoreniveaus ("Startpunt", "In ontwikkeling",
-"Goed op weg", "Sterk onderbouwd") in `js/content.js` (`LEVELS`) zijn een
+"Goed op weg", "Sterk onderbouwd") in `content.js` (`LEVELS`) zijn een
 voorlopige indeling — pas aan zodra dit is afgestemd.
 
 ## Nog te doen (fase 2 en 3, zoals in de briefing)
@@ -56,4 +56,4 @@ voorlopige indeling — pas aan zodra dit is afgestemd.
   bevestiging, niet gekoppeld aan een systeem).
 - Privacyverklaring en toestemming voor gegevensverwerking.
 - Origineel logo en "Obviously"-lettertype verwerken (zie
-  `assets/LEESMIJ.txt`).
+  `LEESMIJ.txt`).
