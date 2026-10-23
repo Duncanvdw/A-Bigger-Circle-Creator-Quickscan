@@ -9,8 +9,10 @@ const BRAND = {
 
 const WELCOME = {
   eyebrow: "Creator Quickscan",
-  title: "Ontdek hoe sterk jouw creator strategie is",
+  title: "Creator Quickscan",
   intro:
+    "Ontdek hoe sterk jouw creator strategie is en waar de verbeterkansen liggen",
+  description:
     "Ontdek hoe jouw bedrijf meer uit creator marketing kan halen. Beantwoord een paar korte vragen en krijg binnen 5-10 minuten inzicht in je sterke punten, verbeterpunten en concrete vervolgstappen.",
   benefitsTitle: "Wat levert het je op?",
   benefits: [
@@ -111,9 +113,9 @@ const SECTIONS = [
     description:
       "In dit onderdeel kijken we hoe goed jouw creator marketing aansluit bij de doelen en strategie van je merk.",
     statements: [
-      { id: "doelstelling_1", text: "We bepalen vantevoren wat ons doel is voor de inzet van creators." },
+      { id: "doelstelling_1", text: "We bepalen van tevoren wat ons doel is voor de inzet van creators." },
       { id: "doelstelling_2", text: "De keuzes voor creators en content sluiten aan op het doel wat we willen bereiken." },
-      { id: "doelstelling_3", text: "We stellen vantevoren verschillende KPI's op om te meten of de creator inzet succesvol was." },
+      { id: "doelstelling_3", text: "We stellen van tevoren verschillende KPI's op om te meten of de creator inzet succesvol was." },
     ],
     tierDescriptions: {
       low: "Doelen en KPI's voor creator inzet liggen nog grotendeels los van elkaar.",
@@ -238,8 +240,8 @@ const SECTIONS = [
       "In dit onderdeel kijken we naar hoe goed de verschillende onderdelen van jouw creator strategie op elkaar aansluiten.",
     statements: [
       { id: "samenhang_1", text: "We baseren de keuzes voor de creators, content en het platform uit hetzelfde einddoel." },
-      { id: "samenhang_2", text: "Onze creator marketing sluit goed aan bij onze algemene marketingstrategie." },
-      { id: "samenhang_3", text: "We meten de resultaten vanuit het vooraf gestelde einddoel." },
+      { id: "samenhang_2", text: "We meten de resultaten vanuit het vooraf gestelde einddoel." },
+      { id: "samenhang_3", text: "Onze creator marketing sluit goed aan bij onze algemene marketingstrategie." },
     ],
     tierDescriptions: {
       low: "Creator marketing staat nog los van de bredere marketingstrategie.",
@@ -268,21 +270,25 @@ const TRANSPARENCY = {
 
 const LEVELS = [
   {
+    id: "startpunt",
     max: 25,
     label: "Startpunt",
     description: "Je staat aan het begin van een doordachte creator strategie. Dat is een prima plek om vanaf te bouwen.",
   },
   {
+    id: "ontwikkeling",
     max: 50,
     label: "In ontwikkeling",
     description: "Je past al onderdelen van een creator strategie toe, maar het mist nog een vaste structuur.",
   },
   {
+    id: "goed-op-weg",
     max: 75,
     label: "Goed op weg",
     description: "De basis staat en wordt regelmatig toegepast, maar er zijn goede verbeterkansen!",
   },
   {
+    id: "sterk-onderbouwd",
     max: 100.01,
     label: "Sterk onderbouwd",
     description: "Creator marketing is goed geïntegreerd in je strategie en je werkt al gestructureerd.",
@@ -530,11 +536,45 @@ const BUDGET_TEXT = {
   },
 };
 
-const CTA_PAGE = {
+// CTA op de resultatenpagina (ingebed, direct na "Hier ligt je grootste kans").
+const EMBEDDED_CTA = {
   title: "Hoe pak je dit nu aan?",
   description:
-    "Je weet nu waar je kansen liggen, welke creatorprofielen bij je passen en welke stappen je nu kan zetten. A Bigger Circle helpt je graag om dit verder uit te werken tot een duidelijke aanpak.",
-  planCta: "Plan een gesprek",
+    "Nu je weet waar de belangrijkste kansen liggen voor jouw creator strategie, wil je vast weten hoe nu verder. A Bigger Circle helpt je daarbij.",
+  planCta: "Plan nu een gesprek in",
+  mailLabel: "Ontvang de resultaten per e-mail:",
   mailCta: "Mail mijn resultaten",
   privacyNote: "Je gegevens worden vertrouwelijk behandeld.",
+};
+
+// CTA als laatste scherm van de Quickscan (full-bleed, einde van de flow).
+const FINAL_CTA = {
+  title: "Hoe pak je dit nu aan?",
+  description:
+    "Je weet nu waar je kansen liggen, welke creator profielen bij je passen en welke stappen je nu kan zetten. Maar hoe vertaal je deze inzichten naar een succesvolle creatorcampagne? A Bigger Circle kan je helpen om dit verder uit te werken tot een duidelijke aanpak en je creator strategie naar een hoger niveau te tillen!",
+  planCta: "Plan nu een gesprek in!",
+  mailCta: "Mail mijn resultaten",
+};
+
+const COVER_PAGE = {
+  title: "Jouw creatorprofielen en vervolgstappen",
+  subtitle: "Voorbeelduitslag van de Creator Quickscan",
+};
+
+const FOOTER_LABEL = "A Bigger Circle - Creator Quickscan";
+
+const SCORE_PAGE = {
+  title: "Jouw uitslag",
+  exampleLabel: "Voorbeeld resultaat",
+  answersLabel: "Jouw antwoorden",
+  breakdownTitle: "Score per onderdeel",
+};
+
+const OPPORTUNITIES_PAGE = {
+  title: "Jouw grootste kansen",
+};
+
+const NEXT_STEPS_PAGE = {
+  title: "Jouw vervolgstappen",
+  description: "Op basis van jouw antwoorden en laagste twee scores.",
 };

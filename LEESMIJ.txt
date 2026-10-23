@@ -1,21 +1,26 @@
-Zodra de officiële bestanden van A Bigger Circle beschikbaar zijn, hier
-in de projectmap plaatsen en de verwijzingen bijwerken:
-
 1. Logo
-   - Plaats het logobestand hier (bv. logo.svg).
-   - Vervang in app.js de functie renderHeader(): de regel met
-     `BRAND.wordmark.map(...)` door een <img src="logo.svg" ...>.
+   - Het echte logobestand (SVG/PNG) is nog niet aangeleverd.
+   - Zodra het er is: vervang in app.js de functie logoHtml(variant) — de
+     regel met `BRAND.wordmark.map(...)` — door een <img src="logo.svg" ...>
+     (met een witte variant voor op de ultramarine achtergronden).
    - Nu wordt het logo nagebouwd als tekst ("A / Bigger / Circle") in
-     Oswald, als tijdelijke vervanging.
+     Obviously Condensed Bold, als tijdelijke vervanging.
 
 2. Lettertype "Obviously"
-   - Plaats de fontbestanden hier (bv. obviously-condensed-bold.woff2, enz.).
-   - Voeg in style.css @font-face regels toe die naar deze bestanden
-     verwijzen en vervang de waarden van --font-display en --font-body.
-   - Nu worden Oswald en Work Sans (Google Fonts) gebruikt als
-     visueel vergelijkbare tijdelijke vervanging (condensed/bold voor
-     titels, neutrale sans voor lopende tekst).
+   - De originele fontbestanden (Obviously-CondensedBold.otf,
+     Obviously-CondensedSemibold.otf, Obviously-ExtendedMedium.otf,
+     Obviously-ExtendedLight.otf, Obviously-Regular.otf, Obviously-Italic.otf,
+     Obviously-Semibold.otf) staan in de projectmap en worden via @font-face
+     in style.css geladen — dit is dus al het echte merklettertype, geen
+     placeholder meer.
+   - Indeling volgens de brand guidelines: Condensed Bold voor grote titels
+     (--font-title), Condensed SemiBold voor koppen (--font-display),
+     Extended Medium/Light voor subkoppen (--font-subheading), en
+     Regular/Italic/SemiBold voor lopende tekst (--font-body).
+   - Wil je ook woff2-bestanden gebruiken (kleiner/sneller dan .otf)? Zet ze
+     in de projectmap en voeg een extra `src:` regel toe aan de betreffende
+     @font-face in style.css.
 
-Verder is er niets functioneel afhankelijk van deze bestanden — de site
-werkt nu al volledig, alleen de merkbeleving wordt sterker zodra de
-originele bestanden zijn verwerkt.
+Verder is er niets functioneel afhankelijk van het logo — de site werkt al
+volledig, alleen de merkbeleving wordt compleet zodra ook het logo is
+verwerkt.

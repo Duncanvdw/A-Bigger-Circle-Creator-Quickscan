@@ -3,6 +3,8 @@
 // profielteksten zijn vooraf geschreven en worden automatisch geselecteerd op
 // basis van de echte antwoorden — dit is de fase 1 vervanger voor de AI-koppeling
 // die in een latere fase wordt toegevoegd (zie briefing).
+//
+// Schermvolgorde en vormgeving volgen het Adobe XD-prototype van A Bigger Circle.
 
 const state = {
   step: 0,
@@ -21,19 +23,25 @@ const state = {
   matchedProfiles: null,
   mailSent: false,
   meetingRequested: false,
+  finalMailSent: false,
 };
 
+// Volgorde zoals in het XD-prototype: welkom -> intro -> "over jouw merk" -> de
+// zeven scorende onderdelen -> transparantie -> resultatenoverzicht -> cover ->
+// carrousel (score+antwoorden, 3 profielen, vervolgstappen, grootste kansen, CTA).
 const FLOW = [
   { id: "welcome" },
   { id: "intro", progress: true },
+  { id: "brand", progress: true },
   ...SECTIONS.map((section, i) => ({ id: "section", progress: true, section, sectionIndex: i })),
   { id: "transparency", progress: true },
   { id: "results-summary" },
-  { id: "brand", progress: true },
+  { id: "cover" },
   { id: "carousel" },
 ];
 
 const PROGRESS_STEPS = FLOW.filter((f) => f.progress);
+const CAROUSEL_VIEWS = ["score-tags", "profile-0", "profile-1", "profile-2", "next-steps", "opportunities", "final-cta"];
 
 // ---------- Scoring ----------
 
@@ -60,7 +68,6 @@ function tierFor(percent) {
 function fmtPercent(n) {
   return n.toLocaleString("nl-NL", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
 }
-
 function sectionsByScore() {
   return SECTIONS.map((s) => ({ section: s, percent: sectionPercent(s) }));
 }
@@ -112,74 +119,99 @@ function profileWhyText(profile) {
   return text;
 }
 
-// ---------- Rendering ----------
+function answerTags() {
+  const tags = [];
+  if (state.brand.branche) tags.push(state.brand.branche);
+  if (state.brand.leeftijd) tags.push(state.brand.leeftijd + " jaar");
+  const budgetLabel = INTRO_QUESTIONS.find((q) => q.id === "budget").options.find((o) => o.value === state.intro.budget);
+  if (budgetLabel) tags.push(budgetLabel.label);
+  const doelLabel = INTRO_QUESTIONS.find((q) => q.id === "doel").options.find((o) => o.value === state.intro.doel);
+  if (doelLabel) tags.push("Doel: " + doelLabel.label);
+  if (state.brand.platformen.length) tags.push(state.brand.platformen.join(" en "));
+  return tags;
+}
+
+// ---------- Render: top-level dispatch ----------
 
 function render() {
   const app = document.getElementById("app");
   const entry = FLOW[state.step];
-  app.innerHTML = `
-    <div class="app-shell">
-      ${renderHeader(entry)}
-      <main class="page">${renderContent(entry)}</main>
-      ${renderNav(entry)}
-    </div>
-  `;
+  let html;
+  if (entry.id === "welcome") html = renderWelcomePage();
+  else if (entry.id === "results-summary") html = renderResultsSummaryPage();
+  else if (entry.id === "cover") html = renderCoverPage();
+  else if (entry.id === "carousel") html = renderCarouselPage();
+  else html = renderStandardShell(entry);
+  app.innerHTML = html;
+}
+
+function scrollTop() {
   window.scrollTo(0, 0);
 }
 
-function renderHeader(entry) {
+function logoHtml(variant) {
+  // variant: "ultramarine" (on oat bg) or "oat" (on ultramarine bg)
+  return `<div class="logo logo-${variant}">${BRAND.wordmark.map((w) => `<span>${w}</span>`).join("")}</div>`;
+}
+
+// ---------- Welcome ----------
+
+function renderWelcomePage() {
+  return `
+    <div class="app-shell">
+      <section class="hero-card">
+        ${logoHtml("oat")}
+        <h1 class="title-xl">${WELCOME.title.split(" ").join("<br>")}</h1>
+        <p class="body-lg">${WELCOME.intro}</p>
+      </section>
+      <section class="benefits">
+        <p class="body-md">${WELCOME.description}</p>
+        <h2 class="heading-sm">${WELCOME.benefitsTitle}</h2>
+        <ul class="dash-list">
+          ${WELCOME.benefits.map((b) => `<li>${b}</li>`).join("")}
+        </ul>
+        <button type="button" class="btn-primary" data-action="start">${WELCOME.cta}</button>
+      </section>
+    </div>
+  `;
+}
+
+// ---------- Gedeelde shell: intro / brand / section / transparency ----------
+
+function renderStandardShell(entry) {
   const progressIdx = PROGRESS_STEPS.indexOf(entry);
   const showProgress = progressIdx > -1;
   const pct = showProgress ? ((progressIdx + 1) / PROGRESS_STEPS.length) * 100 : 0;
   return `
-    <header class="topbar">
-      <div class="logo">${BRAND.wordmark.map((w) => `<span>${w}</span>`).join("")}</div>
-    </header>
-    ${showProgress ? `<div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>` : ""}
+    <div class="page-logo">${logoHtml("ultramarine")}</div>
+    <div class="app-shell">
+      ${renderStandardNav(entry) /* TIJDELIJK: nav ook bovenaan, voor sneller doorklikken tijdens testen. Verwijderen om terug te gaan naar alleen onderaan. */}
+      ${showProgress ? `<div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>` : ""}
+      <main class="page">${renderContent(entry)}</main>
+      ${renderStandardNav(entry)}
+    </div>
   `;
 }
 
 function renderContent(entry) {
   switch (entry.id) {
-    case "welcome":
-      return renderWelcome();
     case "intro":
       return renderIntro();
+    case "brand":
+      return renderBrand();
     case "section":
       return renderSection(entry.section, entry.sectionIndex);
     case "transparency":
       return renderTransparency();
-    case "results-summary":
-      return renderResultsSummary();
-    case "brand":
-      return renderBrand();
-    case "carousel":
-      return renderCarousel();
     default:
       return "";
   }
 }
 
-function renderWelcome() {
-  return `
-    <section class="hero card">
-      <p class="eyebrow">${WELCOME.eyebrow}</p>
-      <h1 class="title-xl">${WELCOME.title}</h1>
-      <p class="body-lg">${WELCOME.intro}</p>
-    </section>
-    <section class="benefits">
-      <h2 class="heading-sm">${WELCOME.benefitsTitle}</h2>
-      <ul class="check-list">
-        ${WELCOME.benefits.map((b) => `<li>${b}</li>`).join("")}
-      </ul>
-    </section>
-  `;
-}
-
 function renderIntro() {
   return `
-    <h1 class="heading-lg">${INTRO_PAGE.title}</h1>
-    <p class="body-md muted">${INTRO_PAGE.description}</p>
+    <h2 class="heading-lg">${INTRO_PAGE.title}</h2>
+    <p class="body-md muted page-description">${INTRO_PAGE.description}</p>
     <div class="question-stack">
       ${INTRO_QUESTIONS.map((q) => renderIntroQuestion(q)).join("")}
     </div>
@@ -191,12 +223,12 @@ function renderIntroQuestion(q) {
     const selected = state.intro[q.id];
     return `
       <div class="question-card">
-        <p class="question-text">${q.question}</p>
-        <div class="option-list">
+        <h3 class="question-text">${q.question}</h3>
+        <div class="option-list stacked">
           ${q.options
             .map(
               (o) => `
-            <button type="button" class="option-pill ${selected === o.value ? "is-selected" : ""}"
+            <button type="button" class="choice-btn ${selected === o.value ? "is-selected" : ""}"
               data-action="select-intro" data-qid="${q.id}" data-value="${o.value}">${o.label}</button>
           `
             )
@@ -208,7 +240,8 @@ function renderIntroQuestion(q) {
   const value = state.intro[q.id] || "";
   return `
     <div class="question-card">
-      <p class="question-text">${q.question} <span class="optional-tag">Optioneel.</span></p>
+      <h3 class="question-text">${q.question}</h3>
+      <p class="optional-tag">Optioneel.</p>
       <input type="text" class="text-input" placeholder="${q.placeholder}" value="${escapeAttr(value)}"
         data-text-intro="${q.id}" />
     </div>
@@ -218,8 +251,8 @@ function renderIntroQuestion(q) {
 function renderSection(section, index) {
   return `
     <p class="step-label">Onderdeel ${index + 1} van de ${SECTIONS.length}</p>
-    <h1 class="heading-lg">${section.title}</h1>
-    <p class="body-md muted">${section.description}</p>
+    <h2 class="heading-lg">${section.title}</h2>
+    <p class="body-md muted page-description">${section.description}</p>
     <div class="question-stack">
       ${section.statements.map((st) => renderScaleQuestion(st.id, st.text)).join("")}
     </div>
@@ -228,8 +261,8 @@ function renderSection(section, index) {
 
 function renderTransparency() {
   return `
-    <h1 class="heading-lg">${TRANSPARENCY.title}</h1>
-    <p class="body-md muted">${TRANSPARENCY.description}</p>
+    <h2 class="heading-lg">${TRANSPARENCY.title}</h2>
+    <p class="body-md muted page-description">${TRANSPARENCY.description}</p>
     <div class="question-stack">
       ${renderScaleQuestion(TRANSPARENCY.id, TRANSPARENCY.text, true)}
     </div>
@@ -240,11 +273,11 @@ function renderScaleQuestion(id, text, isTransparency) {
   const selected = isTransparency ? state.transparency : state.answers[id];
   return `
     <div class="question-card">
-      <p class="question-text">${text}</p>
+      <h3 class="question-text">${text}</h3>
       <div class="scale-row">
         ${ANSWER_SCALE.map(
           (a) => `
-          <button type="button" class="scale-btn ${selected === a.value ? "is-selected" : ""}"
+          <button type="button" class="choice-btn scale-btn ${selected === a.value ? "is-selected" : ""}"
             data-action="select-scale" data-stmt="${id}" data-transparency="${isTransparency ? "1" : "0"}"
             data-value="${a.value}">${a.label}</button>
         `
@@ -254,76 +287,11 @@ function renderScaleQuestion(id, text, isTransparency) {
   `;
 }
 
-function renderResultsSummary() {
-  const pct = totalPercent();
-  const level = levelFor(pct);
-  const strong = strongestTwo();
-  const weak = weakestTwo();
-  return `
-    <div class="result-hero card">
-      <p class="eyebrow">Jouw uitslag</p>
-      <p class="score-big">${fmtPercent(pct)}</p>
-      <span class="level-badge">${level.label}</span>
-      <p class="body-md">${level.description}</p>
-    </div>
-
-    <div class="result-columns">
-      <div>
-        <h2 class="heading-sm good">Dit gaat al goed</h2>
-        ${strong
-          .map(
-            (s) => `
-          <div class="highlight-card good">
-            <p class="highlight-title">${s.section.title}</p>
-            <p class="body-sm">${s.section.tierDescriptions[tierFor(s.percent)]}</p>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-      <div>
-        <h2 class="heading-sm opportunity">Hier ligt je grootste kans</h2>
-        ${weak
-          .map(
-            (s) => `
-          <div class="highlight-card opportunity">
-            <p class="highlight-title">${s.section.title} (${fmtPercent(s.percent)})</p>
-            <p class="body-sm">${s.section.tierDescriptions[tierFor(s.percent)]}</p>
-          </div>
-        `
-          )
-          .join("")}
-      </div>
-    </div>
-
-    <div class="score-breakdown">
-      <h2 class="heading-sm">Score per onderdeel</h2>
-      ${SECTIONS.map((s) => {
-        const p = sectionPercent(s);
-        return `
-          <div class="score-row">
-            <div class="score-row-top">
-              <span>${s.title}</span>
-              <span class="score-row-pct">${fmtPercent(p)}</span>
-            </div>
-            <div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div>
-          </div>
-        `;
-      }).join("")}
-    </div>
-
-    <div class="note-card">
-      <p class="highlight-title">Aandachtspunt: transparantie</p>
-      <p class="body-sm">Dit telt niet mee in je score, maar is wel belangrijk voor je geloofwaardigheid richting je doelgroep.</p>
-    </div>
-  `;
-}
-
 function renderBrand() {
   const q = BRAND_QUESTIONS;
   return `
-    <h1 class="heading-lg">${BRAND_PAGE.title}</h1>
-    <p class="body-md muted">${BRAND_PAGE.description}</p>
+    <h2 class="heading-lg">${BRAND_PAGE.title}</h2>
+    <p class="body-md muted page-description">${BRAND_PAGE.description}</p>
     <div class="question-stack">
       ${renderSingleChoiceCard(q.branche, state.brand.branche)}
       ${renderSingleChoiceCard(q.leeftijd, state.brand.leeftijd)}
@@ -339,12 +307,13 @@ function renderBrand() {
 function renderSingleChoiceCard(q, selected) {
   return `
     <div class="question-card">
-      <p class="question-text">${q.question}</p>
-      <div class="option-list">
+      <h3 class="question-text">${q.question}</h3>
+      <p class="optional-tag">Kies 1 antwoord.</p>
+      <div class="option-list stacked">
         ${q.options
           .map(
             (o) => `
-          <button type="button" class="option-pill ${selected === o ? "is-selected" : ""}"
+          <button type="button" class="choice-btn ${selected === o ? "is-selected" : ""}"
             data-action="select-brand-single" data-qid="${q.id}" data-value="${escapeAttr(o)}">${o}</button>
         `
           )
@@ -357,14 +326,15 @@ function renderSingleChoiceCard(q, selected) {
 function renderMultiChoiceCard(q, selectedList) {
   return `
     <div class="question-card">
-      <p class="question-text">${q.question} <span class="optional-tag">Kies maximaal ${q.max}.</span></p>
-      <div class="option-list">
+      <h3 class="question-text">${q.question}</h3>
+      <p class="optional-tag">Kies maximaal ${q.max}.</p>
+      <div class="option-list wrap">
         ${q.options
           .map((o) => {
             const isSelected = selectedList.includes(o);
             const atMax = selectedList.length >= q.max && !isSelected;
             return `
-            <button type="button" class="option-pill ${isSelected ? "is-selected" : ""} ${atMax ? "is-disabled" : ""}"
+            <button type="button" class="choice-btn ${isSelected ? "is-selected" : ""} ${atMax ? "is-disabled" : ""}"
               data-action="toggle-brand-multi" data-qid="${q.id}" data-max="${q.max}" data-value="${escapeAttr(o)}">${o}</button>
           `;
           })
@@ -374,47 +344,186 @@ function renderMultiChoiceCard(q, selectedList) {
   `;
 }
 
-// ---------- Resultaten-carrousel (na de merkvragen) ----------
+function renderStandardNav(entry) {
+  const canGoBack = state.step > 0;
+  const proceedOk = canProceed(entry);
+  return `
+    <nav class="nav-bar">
+      ${canGoBack ? `<button type="button" class="btn-primary" data-action="nav-prev">Vorige</button>` : "<span></span>"}
+      <button type="button" class="btn-primary" data-action="nav-next" ${proceedOk ? "" : "disabled"}>Volgende</button>
+    </nav>
+  `;
+}
 
-const CAROUSEL_VIEWS = ["opportunities", "profile-0", "profile-1", "profile-2", "next-steps", "cta"];
+// ---------- Resultatenoverzicht (met ingebedde CTA) ----------
 
-function renderCarousel() {
+function renderResultsSummaryPage() {
+  const pct = totalPercent();
+  const level = levelFor(pct);
+  const strong = strongestTwo();
+  const weak = weakestTwo();
+  return `
+    <div class="app-shell">
+      <div class="hero-card result-hero">
+        ${logoHtml("oat")}
+        <p class="eyebrow no-letter-spacing">Jouw resultaat</p>
+        <p class="score-big">${fmtPercent(pct)}</p>
+        <span class="level-badge">${level.label}</span>
+        <p class="body-md level-description level-${level.id}">${level.description}</p>
+      </div>
+
+      <h2 class="heading-sm">Dit gaat al goed</h2>
+      ${strong
+        .map(
+          (s) => `
+        <div class="highlight-card good">
+          <p class="highlight-title">${s.section.title}</p>
+          <p class="body-sm">${s.section.tierDescriptions[tierFor(s.percent)]}</p>
+        </div>
+      `
+        )
+        .join("")}
+
+      <h2 class="heading-sm">Hier ligt je grootste kans</h2>
+      ${weak
+        .map(
+          (s) => `
+        <div class="highlight-card opportunity">
+          <p class="highlight-title">${s.section.title} (${fmtPercent(s.percent)})</p>
+          <p class="body-sm">${s.section.tierDescriptions[tierFor(s.percent)]}</p>
+        </div>
+      `
+        )
+        .join("")}
+
+      <div class="hero-card cta-embed-card">
+        ${logoHtml("oat")}
+        <h2 class="heading-lg cta-heading">${EMBEDDED_CTA.title}</h2>
+        <p class="body-md">${EMBEDDED_CTA.description}</p>
+        <button type="button" class="btn-white" data-action="request-meeting">${EMBEDDED_CTA.planCta}</button>
+        ${
+          state.mailSent
+            ? `<p class="body-sm">Bedankt! Zodra deze functionaliteit live is ontvang je je uitslag automatisch per e-mail.</p>`
+            : `
+          <p class="body-md">${EMBEDDED_CTA.mailLabel}</p>
+          <input type="email" class="text-input" id="result-email" placeholder="jouw@email.nl" />
+          <button type="button" class="btn-white" data-action="send-mail">${EMBEDDED_CTA.mailCta}</button>
+        `
+        }
+        ${state.meetingRequested ? `<p class="body-sm">Bedankt! We nemen contact met je op om dit moment te bevestigen.</p>` : ""}
+      </div>
+      <p class="body-sm muted">${EMBEDDED_CTA.privacyNote}</p>
+
+      <nav class="nav-bar">
+        <button type="button" class="btn-primary" data-action="nav-prev">Vorige</button>
+        <button type="button" class="btn-primary" data-action="nav-next">Bekijk vervolgstappen</button>
+      </nav>
+    </div>
+  `;
+}
+
+// ---------- Cover (tussenscherm) ----------
+
+function renderCoverPage() {
+  return `
+    <div class="cover-page" data-action="cover-next">
+      ${logoHtml("oat")}
+      <div class="cover-content">
+        <h1 class="title-xl cover-title">${COVER_PAGE.title.replace(" en ", "<br>en ")}</h1>
+        <p class="body-lg cover-subtitle">${COVER_PAGE.subtitle}</p>
+      </div>
+      <p class="footer-label oat">${FOOTER_LABEL}</p>
+    </div>
+  `;
+}
+
+// ---------- Resultaten-carrousel ----------
+
+function renderCarouselPage() {
   if (!state.matchedProfiles) state.matchedProfiles = matchProfiles();
   const view = CAROUSEL_VIEWS[state.carouselStep];
+
+  if (view === "final-cta") return renderFinalCtaPage();
+
   let body = "";
-  if (view === "opportunities") body = renderOpportunities();
+  if (view === "score-tags") body = renderScoreTagsPage();
   else if (view.startsWith("profile-")) body = renderProfile(parseInt(view.split("-")[1], 10));
   else if (view === "next-steps") body = renderNextSteps();
-  else if (view === "cta") body = renderCtaPage();
+  else if (view === "opportunities") body = renderOpportunities();
 
+  const atStart = state.carouselStep === 0;
+  const atEnd = state.carouselStep === CAROUSEL_VIEWS.length - 1;
   return `
-    <div class="carousel-index">${state.carouselStep + 1} / ${CAROUSEL_VIEWS.length}</div>
-    <div class="carousel-body">${body}</div>
+    <div class="carousel-shell">
+      <div class="carousel-body">${body}</div>
+      <p class="footer-label">${FOOTER_LABEL}</p>
+      <button type="button" class="arrow-nav arrow-left" data-action="carousel-prev" aria-label="Vorige">&#8592;</button>
+      ${atEnd ? "" : `<button type="button" class="arrow-nav arrow-right" data-action="carousel-next" aria-label="Volgende">&#8594;</button>`}
+    </div>
+  `;
+}
+
+function renderScoreTagsPage() {
+  const pct = totalPercent();
+  const level = levelFor(pct);
+  return `
+    <div class="score-tags-grid">
+      <div>
+        <h1 class="heading-lg">${SCORE_PAGE.title}</h1>
+        <div class="hero-card score-hero">
+          <p class="eyebrow">${SCORE_PAGE.exampleLabel}</p>
+          <p class="score-big">${fmtPercent(pct)}</p>
+          <span class="level-badge">${level.label}</span>
+          <p class="body-md level-description level-${level.id}">${level.description}</p>
+        </div>
+        <h3 class="heading-xs answers-label">${SCORE_PAGE.answersLabel}</h3>
+        <div class="tag-list">
+          ${answerTags()
+            .map((t) => `<span class="answer-tag">${t}</span>`)
+            .join("")}
+        </div>
+      </div>
+      <div class="score-breakdown-col">
+        <h3 class="heading-xs breakdown-title">${SCORE_PAGE.breakdownTitle}</h3>
+        ${SECTIONS.map((s) => {
+          const p = sectionPercent(s);
+          return `
+            <div class="score-row">
+              <div class="score-row-top">
+                <span class="highlight-title">${s.title}</span>
+                <span class="score-row-pct">${fmtPercent(p)}</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div>
+              <p class="body-sm">${s.tierDescriptions[tierFor(p)]}</p>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    </div>
   `;
 }
 
 function renderOpportunities() {
   const weak = weakestTwo();
   return `
-    <h1 class="heading-lg">Jouw grootste kansen</h1>
-    <p class="body-md muted">Op basis van je twee laagst scorende onderdelen.</p>
+    <h1 class="heading-lg opportunities-title">${OPPORTUNITIES_PAGE.title}</h1>
     <div class="opportunity-grid">
       ${weak
         .map(
           (w) => `
         <div class="opportunity-col">
-          <h2 class="heading-sm">${w.section.title}</h2>
-          <p class="body-sm muted">${w.section.tierDescriptions[tierFor(w.percent)]}</p>
+          <h2 class="heading-sm opportunity-heading">${w.section.title}</h2>
+          <p class="body-sm muted opportunity-tier-text">${w.section.tierDescriptions[tierFor(w.percent)]}</p>
           <div class="advice-card">
-            <span class="advice-tag">Quick win</span>
+            <span class="pill-label">Quick win</span>
             <p class="body-sm">${w.section.advice.quickwin}</p>
           </div>
           <div class="advice-card">
-            <span class="advice-tag">Volgende stap</span>
+            <span class="pill-label">Volgende stap</span>
             <p class="body-sm">${w.section.advice.volgendestap}</p>
           </div>
           <div class="advice-card">
-            <span class="advice-tag">Langetermijndoel</span>
+            <span class="pill-label">Langetermijndoel</span>
             <p class="body-sm">${w.section.advice.langetermijn}</p>
           </div>
         </div>
@@ -428,9 +537,18 @@ function renderOpportunities() {
 function renderProfile(i) {
   const profile = state.matchedProfiles[i];
   return `
-    <p class="step-label">Profiel ${i + 1} van 3 · voorbeeldprofiel</p>
-    <h1 class="heading-lg">${profile.name}</h1>
-    <p class="body-md muted">${profile.type} — ${profile.platform}</p>
+    <div class="profile-header">
+      <div>
+        <h1 class="heading-lg">${profile.name}</h1>
+        <p class="body-md muted profile-subtitle">${profile.type} - ${profile.platform}</p>
+      </div>
+      <span class="pill-outline profile-count-badge">Profiel ${i + 1} van 3</span>
+    </div>
+    <div class="tag-list outline">
+      <span class="pill-outline profile-tag">${profile.tags[0]}</span>
+      <span class="pill-outline profile-tag">${profile.tags[1]}</span>
+      <span class="pill-outline profile-tag">${profile.platform}</span>
+    </div>
     <div class="profile-grid">
       <div class="profile-card">
         <p class="highlight-title">Waar post deze creator over?</p>
@@ -445,7 +563,7 @@ function renderProfile(i) {
         <p class="body-sm">${profileWhyText(profile)}</p>
       </div>
       <div class="profile-card">
-        <p class="highlight-title">KPI's voor dit voorstel</p>
+        <p class="highlight-title">KPI's om te gebruiken binnen dit voorstel</p>
         <p class="body-sm">${profile.kpis}</p>
       </div>
       <div class="profile-card">
@@ -453,7 +571,6 @@ function renderProfile(i) {
         <p class="body-sm">${profile.firstStep}</p>
       </div>
     </div>
-    <p class="body-sm muted">Dit is een fictief voorbeeldprofiel, geen bestaande creator.</p>
   `;
 }
 
@@ -467,18 +584,20 @@ function renderNextSteps() {
     { label: "Je budget", data: budget },
   ];
   return `
-    <h1 class="heading-lg">Jouw vervolgstappen</h1>
-    <p class="body-md muted">Op basis van jouw antwoorden.</p>
-    <div class="profile-grid">
+    <h1 class="heading-lg">${NEXT_STEPS_PAGE.title}</h1>
+    <p class="body-md muted">${NEXT_STEPS_PAGE.description}</p>
+    <div class="profile-grid three-col">
       ${cols
         .map(
           (c) => `
-        <div class="profile-card">
-          <p class="highlight-title">${c.label}</p>
-          <p class="body-sm">${c.data.text}</p>
-          <ul class="check-list compact">
-            ${c.data.bullets.map((b) => `<li>${b}</li>`).join("")}
-          </ul>
+        <div>
+          <span class="pill-label block">${c.label}</span>
+          <div class="profile-card">
+            <p class="body-sm">${c.data.text}</p>
+            <ul class="dash-list compact">
+              ${c.data.bullets.map((b) => `<li>${b}</li>`).join("")}
+            </ul>
+          </div>
         </div>
       `
         )
@@ -487,77 +606,35 @@ function renderNextSteps() {
   `;
 }
 
-function renderCtaPage() {
+function renderFinalCtaPage() {
   return `
-    <h1 class="heading-lg">${CTA_PAGE.title}</h1>
-    <p class="body-md muted">${CTA_PAGE.description}</p>
-
-    <div class="cta-grid">
-      <div class="cta-card">
-        <h2 class="heading-sm">${CTA_PAGE.planCta}</h2>
-        ${
-          state.meetingRequested
-            ? `<p class="body-sm">Bedankt! We nemen contact met je op om dit moment te bevestigen.</p>`
-            : `
-          <div class="form-row">
-            <input type="date" class="text-input" id="meeting-date" />
-            <select class="text-input" id="meeting-time">
-              ${["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"]
-                .map((t) => `<option value="${t}">${t}</option>`)
-                .join("")}
-            </select>
-          </div>
-          <button type="button" class="btn-primary" data-action="request-meeting">Gesprek aanvragen</button>
-        `
-        }
+    <div class="final-cta-page">
+      ${logoHtml("oat")}
+      <div class="final-cta-body">
+        <h1 class="heading-lg">${FINAL_CTA.title}</h1>
+        <p class="body-md">${FINAL_CTA.description}</p>
+        <div class="final-cta-buttons">
+          <button type="button" class="btn-white" data-action="request-meeting">${FINAL_CTA.planCta}</button>
+          <button type="button" class="btn-white" data-action="send-mail-final">${FINAL_CTA.mailCta}</button>
+        </div>
+        ${state.finalMailSent ? `<p class="body-sm">Bedankt! Zodra deze functionaliteit live is ontvang je je uitslag automatisch per e-mail.</p>` : ""}
+        ${state.meetingRequested ? `<p class="body-sm">Bedankt! We nemen contact met je op om dit moment te bevestigen.</p>` : ""}
       </div>
-
-      <div class="cta-card">
-        <h2 class="heading-sm">${CTA_PAGE.mailCta}</h2>
-        ${
-          state.mailSent
-            ? `<p class="body-sm">Bedankt! Zodra deze functionaliteit live is ontvang je je uitslag automatisch per e-mail.</p>`
-            : `
-          <div class="form-row">
-            <input type="email" class="text-input" id="result-email" placeholder="jouw@email.nl" />
-          </div>
-          <button type="button" class="btn-primary" data-action="send-mail">Mail mijn resultaten</button>
-        `
-        }
-      </div>
+      <p class="footer-label oat">${FOOTER_LABEL}</p>
+      <button type="button" class="arrow-nav arrow-left oat" data-action="carousel-prev" aria-label="Vorige">&#8592;</button>
     </div>
-    <p class="body-sm muted">${CTA_PAGE.privacyNote}</p>
   `;
 }
 
 // ---------- Navigatie ----------
 
-function renderNav(entry) {
-  if (entry.id === "welcome") {
-    return `<nav class="nav-bar single"><button type="button" class="btn-primary" data-action="start">${WELCOME.cta}</button></nav>`;
-  }
-  if (entry.id === "carousel") {
-    const atStart = state.carouselStep === 0;
-    const atEnd = state.carouselStep === CAROUSEL_VIEWS.length - 1;
-    return `
-      <nav class="nav-bar">
-        <button type="button" class="btn-ghost" data-action="carousel-prev">&larr; Vorige</button>
-        ${atEnd ? `<span class="body-sm muted">Einde van de Quickscan</span>` : `<button type="button" class="btn-primary" data-action="carousel-next">Volgende &rarr;</button>`}
-      </nav>
-    `;
-  }
-  const canGoBack = state.step > 0;
-  const proceedOk = canProceed(entry);
-  const nextLabel = entry.id === "results-summary" ? "Bekijk vervolgstappen" : "Volgende";
-  return `
-    <nav class="nav-bar">
-      ${canGoBack ? `<button type="button" class="btn-ghost" data-action="nav-prev">Vorige</button>` : "<span></span>"}
-      <button type="button" class="btn-primary" data-action="nav-next" ${proceedOk ? "" : "disabled"}>${nextLabel}</button>
-    </nav>
-  `;
-}
-
 function canProceed(entry) {
+  // TIJDELIJK: validatie uitgeschakeld zodat je kan doorklikken zonder
+  // vragen in te vullen (voor testen). Originele logica hieronder bewaard
+  // in comments — haal de comment-tekens weg en verwijder de "return true"
+  // erboven om de echte validatie weer aan te zetten.
+  return true;
+  /*
   switch (entry.id) {
     case "intro":
       return ["inzet", "ervaring", "doel", "budget"].every((id) => state.intro[id]);
@@ -577,6 +654,7 @@ function canProceed(entry) {
     default:
       return true;
   }
+  */
 }
 
 function goNext() {
@@ -587,6 +665,7 @@ function goNext() {
       state.matchedProfiles = matchProfiles();
     }
     render();
+    scrollTop();
   }
 }
 
@@ -594,6 +673,7 @@ function goPrev() {
   if (state.step > 0) {
     state.step -= 1;
     render();
+    scrollTop();
   }
 }
 
@@ -601,6 +681,7 @@ function carouselNext() {
   if (state.carouselStep < CAROUSEL_VIEWS.length - 1) {
     state.carouselStep += 1;
     render();
+    scrollTop();
   }
 }
 
@@ -608,6 +689,7 @@ function carouselPrev() {
   if (state.carouselStep > 0) {
     state.carouselStep -= 1;
     render();
+    scrollTop();
   } else {
     goPrev();
   }
@@ -631,6 +713,7 @@ document.addEventListener("click", (e) => {
   if (action === "nav-prev") return goPrev();
   if (action === "carousel-next") return carouselNext();
   if (action === "carousel-prev") return carouselPrev();
+  if (action === "cover-next") return goNext();
 
   if (action === "select-intro") {
     state.intro[el.dataset.qid] = el.dataset.value;
@@ -675,6 +758,11 @@ document.addEventListener("click", (e) => {
     state.mailSent = true;
     return render();
   }
+
+  if (action === "send-mail-final") {
+    state.finalMailSent = true;
+    return render();
+  }
 });
 
 document.addEventListener("input", (e) => {
@@ -685,3 +773,4 @@ document.addEventListener("input", (e) => {
 });
 
 render();
+scrollTop();
