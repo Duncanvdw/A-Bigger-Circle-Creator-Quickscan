@@ -660,6 +660,13 @@ h2.heading-lg {
   letter-spacing: 0.2em;
   color: var(--text);
 }
+.score-tags-footer {
+  /* Op "Jouw uitslag" hoort de footer-tekst bij de (kortere) linkerkolom,
+     niet los onderaan de hele (langere) pagina — dus hier weer gewoon in de
+     normale flow i.p.v. absoluut gepositioneerd. */
+  position: static;
+  margin-top: 20px;
+}
 .footer-label.oat {
   color: var(--on-blue);
 }
@@ -672,8 +679,28 @@ h2.heading-lg {
   min-height: 100vh;
   padding: 44px 64px 90px;
 }
+.carousel-shell:has(.score-tags-grid) {
+  /* Op "Jouw uitslag" zit de footer-tekst ín de linkerkolom (niet meer
+     los onderaan de pagina), dus die extra 90px ruimte onderaan — bedoeld
+     om die absolute footer niet te laten overlappen — is hier overbodige
+     lege ruimte geworden. */
+  padding-bottom: clamp(16px, 4vh, 44px);
+}
+@media (min-width: 821px) {
+  .carousel-shell:has(.profile-header),
+  .carousel-shell:has(.opportunity-grid) {
+    /* Geen scrollen meer nodig op de profielpagina's en "Jouw grootste
+       kansen". Op mobiel (waar simpelweg niet genoeg ruimte is) blijft
+       scrollen gewoon mogelijk. */
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+}
 .carousel-body {
-  max-width: 1100px;
+  max-width: 1300px;
   margin: 0 auto;
 }
 
@@ -713,21 +740,26 @@ h2.heading-lg {
   gap: 40px;
 }
 .score-breakdown-col {
-  /* De rechterkolom begint anders hoger dan de blauwe kaart links (die pas
-     ná de "JOUW UITSLAG"-titel start). Duw 'm naar beneden met ongeveer de
-     hoogte van die titel + de ruimte eronder, zodat beide kolommen gelijk
-     uitlijnen met de bovenkant van het blauwe vak. */
-  margin-top: calc(var(--type-heading) * 1.04 + 24px);
-}
-@media (max-width: 820px) {
-  .score-breakdown-col {
-    /* In de gestapelde mobiele layout staat de rechterkolom gewoon onder de
-       linkerkolom, dus die extra ruimte is daar niet nodig. */
-    margin-top: 0;
-  }
+  margin-top: 0;
 }
 .score-hero {
   margin-top: 16px;
+}
+.score-hero-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.score-hero .score-big {
+  /* Alleen het percentage in dit blauwe vak (links op "Jouw uitslag"), 80px
+     kleiner dan het grote percentage elders (welkomst-/resultatenpagina). */
+  font-size: calc(var(--type-title) - 80px);
+  margin: 0;
+}
+.score-hero .level-badge {
+  /* Minder lompe, normalere padding dan de standaard 15px 35px. */
+  padding: 6px;
+  margin: 0;
 }
 .tag-list {
   display: flex;
@@ -766,7 +798,7 @@ h2.heading-lg {
 }
 
 .score-row {
-  margin-bottom: 18px;
+  margin-bottom: 2px;
 }
 .score-row-top {
   display: flex;
@@ -774,19 +806,18 @@ h2.heading-lg {
   margin-bottom: 6px;
 }
 .score-row-top .highlight-title {
-  /* Sectienamen als "Doelstelling en strategie" in dit lijstje, 4px kleiner
+  /* Sectienamen als "Doelstelling en strategie" in dit lijstje, 7px kleiner
      dan de normale .highlight-title (25px) elders. */
-  font-size: 21px;
+  font-size: 18px;
 }
 .score-row-pct {
   color: var(--text);
   font-weight: 600;
 }
 .score-row .body-sm {
-  /* Tekst onder elke voortgangsbalk, 2px kleiner dan normaal (was 4px, nu
-     weer 2px erbij) — met een ondergrens zodat het op mobiel niet te klein
-     wordt. */
-  font-size: max(10px, calc(var(--type-body-sm) - 2px));
+  /* Tekst onder elke voortgangsbalk, 6px kleiner dan normaal — met een
+     ondergrens zodat het op mobiel niet te klein wordt. */
+  font-size: max(10px, calc(var(--type-body-sm) - 6px));
 }
 .bar-track {
   height: 10px;
@@ -819,28 +850,58 @@ h2.heading-lg {
 .profile-grid:not(.three-col) .profile-card:nth-child(-n + 3) {
   grid-column: span 2;
   min-height: 190px;
+  margin-bottom: 0;
 }
 .profile-grid:not(.three-col) .profile-card:nth-child(n + 4) {
   grid-column: span 3;
   min-height: 110px;
 }
 .opportunity-col {
-  display: flex;
-  flex-direction: column;
+  /* "display: contents" laat de kolom-wrapper zelf uit de layout verdwijnen,
+     zodat de kopjes/tekst/kaartjes van beide kolommen direct in dezelfde
+     grid komen. Zo matcht CSS Grid automatisch de hoogte van elke rij
+     (linker en rechter kaartje van hetzelfde type worden exact even hoog). */
+  display: contents;
+}
+.opportunity-col .opportunity-heading {
+  grid-row: 1;
+}
+.opportunity-col .opportunity-tier-text {
+  grid-row: 2;
+}
+.opportunity-col .advice-card:nth-of-type(1) {
+  grid-row: 3;
+}
+.opportunity-col .advice-card:nth-of-type(2) {
+  grid-row: 4;
+}
+.opportunity-col .advice-card:nth-of-type(3) {
+  grid-row: 5;
 }
 .opportunities-title {
-  /* Even klein als de andere titels op de site (h2.heading-lg elders). */
+  font-size: calc(var(--type-heading) - 30px);
+  margin-bottom: 0;
+}
+.score-tags-title {
+  font-size: calc(var(--type-heading) - 20px);
+}
+.profile-name {
   font-size: calc(var(--type-heading) - 20px);
 }
 .opportunity-heading {
   font-family: var(--font-display);
   font-weight: 600;
   font-size: calc(var(--type-subheading) + 12px);
-  margin-bottom: 0;
+  line-height: 1;
+  margin: 0;
 }
 .opportunity-tier-text {
-  /* 20px extra ruimte onder deze zin, vóór het eerste advieskaartje. */
-  margin-bottom: 20px;
+  margin-bottom: 0;
+}
+.opportunity-col .body-sm {
+  /* Alle gewone (niet-kopje) tekst op deze pagina: de tussenzin en de
+     tekst in de 6 kaartjes. */
+  font-size: calc(var(--type-body-sm) - 4px);
 }
 
 .pill-label {
@@ -860,9 +921,10 @@ h2.heading-lg {
 .advice-card .pill-label {
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 25px;
+  font-size: 22px;
   padding-top: 0;
   padding-bottom: 0;
+  margin-bottom: 4px;
 }
 
 .advice-card,
@@ -873,14 +935,30 @@ h2.heading-lg {
   margin-bottom: 12px;
 }
 .advice-card {
-  /* Alle 6 kaartjes (2 kolommen x 3) even hoog, zodat ze mooi uitlijnen. */
-  min-height: 160px;
+  /* Alle 6 kaartjes (2 kolommen x 3) even hoog, zodat ze mooi uitlijnen.
+     (De exacte, gelijke hoogte wordt verder geregeld in app.js, zodat alle
+     6 — niet alleen per rij — meegroeien zodra er eentje meer tekst heeft.) */
+  min-height: 110px;
+  margin-bottom: 0;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+.opportunity-grid {
+  gap: 12px;
 }
 .profile-card .highlight-title {
   text-transform: uppercase;
   /* Altijd 3px groter dan de .body-sm tekst eronder in hetzelfde kaartje. */
   font-size: calc(var(--type-body-sm) + 3px);
   letter-spacing: 0.01em;
+}
+.profile-grid:not(.three-col) .profile-card .highlight-title {
+  /* Alleen de 5 vakjes op de profielpagina's (niet de 3 op "Jouw
+     vervolgstappen"): kopje 4px kleiner, tekst 3px kleiner. */
+  font-size: calc(var(--type-body-sm) - 1px);
+}
+.profile-grid:not(.three-col) .profile-card .body-sm {
+  font-size: calc(var(--type-body-sm) - 3px);
 }
 
 .profile-header {
@@ -989,3 +1067,139 @@ h2.heading-lg {
     white-space: normal;
   }
 }
+
+/* ---------- Plan een gesprek (kalender) ---------- */
+
+.calendar-card {
+  background: var(--bblue);
+  border-radius: 20px;
+  padding: 32px;
+  margin: 24px auto 0;
+  max-width: 520px;
+}
+.calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+.calendar-nav-btn {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--oat);
+  color: var(--ultramarine);
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-nav-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.calendar-month-label {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 26px;
+  color: var(--text);
+  text-transform: capitalize;
+}
+.calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 8px;
+}
+.calendar-weekdays span {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  row-gap: 6px;
+}
+.calendar-cell {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.calendar-cell.is-empty {
+  visibility: hidden;
+}
+.calendar-cell:disabled {
+  color: rgba(var(--ultramarine-rgb), 0.3);
+  cursor: not-allowed;
+}
+.calendar-cell.is-selected {
+  background: var(--ultramarine);
+  color: var(--on-blue);
+  font-weight: 700;
+}
+
+.time-slot-card {
+  margin-top: 20px;
+}
+.time-slot-label {
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text);
+  margin-bottom: 14px;
+}
+.time-slot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.time-slot-btn {
+  text-align: center;
+}
+
+.btn-full {
+  display: block;
+  width: 100%;
+  background: var(--ultramarine);
+  color: var(--on-blue);
+  border-radius: var(--radius-pill);
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+.btn-full:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-pill-auto {
+  display: inline-block;
+  background: var(--ultramarine);
+  color: var(--on-blue);
+  border-radius: var(--radius-pill);
+  padding: 14px 28px;
+  font-size: 15px;
+  font-weight: 600;
+  margin-top: 24px;
+}
+
+@media (max-width: 480px) {
+  .time-slot-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .calendar-card {
+    padding: 20px;
+  }
+}
+

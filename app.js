@@ -23,8 +23,43 @@ const state = {
   matchedProfiles: null,
   mailSent: false,
   meetingRequested: false,
-  finalMailSent: false,
+
+  // Vervolgschermen vanaf de allerlaatste pagina ("Plan nu een gesprek in!" /
+  // "Mail mijn resultaten"). null = toon gewoon de laatste carrousel-pagina.
+  finalSubview: null, // null | "schedule" | "email"
+  schedule: {
+    viewYear: new Date().getFullYear(),
+    viewMonth: new Date().getMonth(),
+    selectedDate: null, // { y, m, d }
+    selectedTime: null,
+    requested: false,
+  },
+  emailCapture: {
+    email: "",
+    sent: false,
+  },
 };
+
+const MONTH_NAMES = [
+  "januari", "februari", "maart", "april", "mei", "juni",
+  "juli", "augustus", "september", "oktober", "november", "december",
+];
+const WEEKDAY_SHORT = ["ma", "di", "wo", "do", "vr", "za", "zo"];
+const WEEKDAY_FULL = ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"];
+const SCHEDULE_TIME_SLOTS = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00"];
+
+function mondayIndex(date) {
+  return (date.getDay() + 6) % 7; // 0=maandag ... 6=zondag
+}
+function isWeekendDate(y, m, d) {
+  const day = new Date(y, m, d).getDay();
+  return day === 0 || day === 6;
+}
+function isPastDate(y, m, d) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(y, m, d) < today;
+}
 
 // Volgorde zoals in het XD-prototype: welkom -> intro -> "over jouw merk" -> de
 // zeven scorende onderdelen -> transparantie -> resultatenoverzicht -> cover ->
@@ -135,6 +170,14 @@ function answerTags() {
 
 function render() {
   const app = document.getElementById("app");
+  if (state.finalSubview === "schedule") {
+    app.innerHTML = renderSchedulePage();
+    return;
+  }
+  if (state.finalSubview === "email") {
+    app.innerHTML = renderEmailCapturePage();
+    return;
+  }
   const entry = FLOW[state.step];
   let html;
   if (entry.id === "welcome") html = renderWelcomePage();
@@ -143,6 +186,25 @@ function render() {
   else if (entry.id === "carousel") html = renderCarouselPage();
   else html = renderStandardShell(entry);
   app.innerHTML = html;
+  equalizeAdviceCardHeights();
+}
+
+function equalizeAdviceCardHeights() {
+  // "Jouw grootste kansen": alle 6 kaartjes (niet alleen per rij) even hoog
+  // maken, op basis van het hoogste kaartje — dus als er ergens langere
+  // tekst in staat, groeien alle 6 automatisch mee.
+  const cards = document.querySelectorAll(".advice-card");
+  if (!cards.length) return;
+  cards.forEach((c) => {
+    c.style.minHeight = "";
+  });
+  let tallest = 0;
+  cards.forEach((c) => {
+    if (c.offsetHeight > tallest) tallest = c.offsetHeight;
+  });
+  cards.forEach((c) => {
+    c.style.minHeight = tallest + "px";
+  });
 }
 
 function scrollTop() {
@@ -185,7 +247,6 @@ function renderStandardShell(entry) {
   return `
     <div class="page-logo">${logoHtml("ultramarine")}</div>
     <div class="app-shell">
-      ${renderStandardNav(entry) /* TIJDELIJK: nav ook bovenaan, voor sneller doorklikken tijdens testen. Verwijderen om terug te gaan naar alleen onderaan. */}
       ${showProgress ? `<div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>` : ""}
       <main class="page">${renderContent(entry)}</main>
       ${renderStandardNav(entry)}
@@ -456,7 +517,14 @@ function renderCarouselPage() {
   return `
     <div class="carousel-shell">
       <div class="carousel-body">${body}</div>
-      <p class="footer-label">${FOOTER_LABEL}</p>
+      ${
+        view === "score-tags"
+          ? ""
+          : /* Op "Jouw uitslag" staat de footer-tekst ín de linkerkolom (zie
+               renderScoreTagsPage) zodat hij bij dat kortere linker deel
+               hoort, in plaats van los onderaan de hele (langere) pagina. */
+            `<p class="footer-label">${FOOTER_LABEL}</p>`
+      }
       <button type="button" class="arrow-nav arrow-left" data-action="carousel-prev" aria-label="Vorige">&#8592;</button>
       ${atEnd ? "" : `<button type="button" class="arrow-nav arrow-right" data-action="carousel-next" aria-label="Volgende">&#8594;</button>`}
     </div>
@@ -469,11 +537,13 @@ function renderScoreTagsPage() {
   return `
     <div class="score-tags-grid">
       <div>
-        <h1 class="heading-lg">${SCORE_PAGE.title}</h1>
+        <h1 class="heading-lg score-tags-title">${SCORE_PAGE.title}</h1>
         <div class="hero-card score-hero">
           <p class="eyebrow">${SCORE_PAGE.exampleLabel}</p>
-          <p class="score-big">${fmtPercent(pct)}</p>
-          <span class="level-badge">${level.label}</span>
+          <div class="score-hero-row">
+            <p class="score-big">${fmtPercent(pct)}</p>
+            <span class="level-badge">${level.label}</span>
+          </div>
           <p class="body-md level-description level-${level.id}">${level.description}</p>
         </div>
         <h3 class="heading-xs answers-label">${SCORE_PAGE.answersLabel}</h3>
@@ -482,6 +552,7 @@ function renderScoreTagsPage() {
             .map((t) => `<span class="answer-tag">${t}</span>`)
             .join("")}
         </div>
+        <p class="footer-label score-tags-footer">${FOOTER_LABEL}</p>
       </div>
       <div class="score-breakdown-col">
         <h3 class="heading-xs breakdown-title">${SCORE_PAGE.breakdownTitle}</h3>
@@ -539,7 +610,7 @@ function renderProfile(i) {
   return `
     <div class="profile-header">
       <div>
-        <h1 class="heading-lg">${profile.name}</h1>
+        <h1 class="heading-lg profile-name">${profile.name}</h1>
         <p class="body-md muted profile-subtitle">${profile.type} - ${profile.platform}</p>
       </div>
       <span class="pill-outline profile-count-badge">Profiel ${i + 1} van 3</span>
@@ -574,10 +645,15 @@ function renderProfile(i) {
   `;
 }
 
+const MISSING_ANSWER_TEXT = {
+  text: "Deze vraag is nog niet beantwoord.",
+  bullets: [],
+};
+
 function renderNextSteps() {
-  const startpunt = STARTPUNT_TEXT[state.intro.inzet];
-  const doel = DOEL_TEXT[state.intro.doel];
-  const budget = BUDGET_TEXT[state.intro.budget];
+  const startpunt = STARTPUNT_TEXT[state.intro.inzet] || MISSING_ANSWER_TEXT;
+  const doel = DOEL_TEXT[state.intro.doel] || MISSING_ANSWER_TEXT;
+  const budget = BUDGET_TEXT[state.intro.budget] || MISSING_ANSWER_TEXT;
   const cols = [
     { label: "Je startpunt", data: startpunt },
     { label: "Je doel", data: doel },
@@ -614,11 +690,9 @@ function renderFinalCtaPage() {
         <h1 class="heading-lg">${FINAL_CTA.title}</h1>
         <p class="body-md">${FINAL_CTA.description}</p>
         <div class="final-cta-buttons">
-          <button type="button" class="btn-white" data-action="request-meeting">${FINAL_CTA.planCta}</button>
-          <button type="button" class="btn-white" data-action="send-mail-final">${FINAL_CTA.mailCta}</button>
+          <button type="button" class="btn-white" data-action="goto-schedule">${FINAL_CTA.planCta}</button>
+          <button type="button" class="btn-white" data-action="goto-email-capture">${FINAL_CTA.mailCta}</button>
         </div>
-        ${state.finalMailSent ? `<p class="body-sm">Bedankt! Zodra deze functionaliteit live is ontvang je je uitslag automatisch per e-mail.</p>` : ""}
-        ${state.meetingRequested ? `<p class="body-sm">Bedankt! We nemen contact met je op om dit moment te bevestigen.</p>` : ""}
       </div>
       <p class="footer-label oat">${FOOTER_LABEL}</p>
       <button type="button" class="arrow-nav arrow-left oat" data-action="carousel-prev" aria-label="Vorige">&#8592;</button>
@@ -626,15 +700,117 @@ function renderFinalCtaPage() {
   `;
 }
 
+// ---------- Plan een gesprek (kalender + tijdstip) ----------
+
+function renderSchedulePage() {
+  const s = state.schedule;
+  const y = s.viewYear;
+  const m = s.viewMonth;
+  const daysInMonth = new Date(y, m + 1, 0).getDate();
+  const leading = mondayIndex(new Date(y, m, 1));
+  const totalCells = leading + daysInMonth;
+  const rows = Math.ceil(totalCells / 7);
+
+  let cells = "";
+  for (let i = 0; i < rows * 7; i++) {
+    const dayNum = i - leading + 1;
+    if (dayNum < 1 || dayNum > daysInMonth) {
+      cells += `<span class="calendar-cell is-empty"></span>`;
+      continue;
+    }
+    const disabled = isWeekendDate(y, m, dayNum) || isPastDate(y, m, dayNum);
+    const isSelected = !!s.selectedDate && s.selectedDate.y === y && s.selectedDate.m === m && s.selectedDate.d === dayNum;
+    cells += `
+      <button type="button" class="calendar-cell ${isSelected ? "is-selected" : ""}"
+        data-action="select-calendar-date" data-day="${dayNum}" ${disabled ? "disabled" : ""}>${dayNum}</button>
+    `;
+  }
+
+  const today = new Date();
+  const atCurrentMonth = y === today.getFullYear() && m === today.getMonth();
+
+  return `
+    <div class="app-shell">
+      <div class="page-logo">${logoHtml("ultramarine")}</div>
+      <h1 class="heading-lg">Plan een gesprek</h1>
+      <p class="body-md muted">Kies een datum en tijd. We nemen contact met je op om de afspraak te bevestigen.</p>
+
+      <div class="calendar-card">
+        <div class="calendar-header">
+          <button type="button" class="calendar-nav-btn" data-action="calendar-prev-month" aria-label="Vorige maand" ${atCurrentMonth ? "disabled" : ""}>&#8249;</button>
+          <span class="calendar-month-label">${MONTH_NAMES[m]} ${y}</span>
+          <button type="button" class="calendar-nav-btn" data-action="calendar-next-month" aria-label="Volgende maand">&#8250;</button>
+        </div>
+        <div class="calendar-weekdays">
+          ${WEEKDAY_SHORT.map((d) => `<span>${d}</span>`).join("")}
+        </div>
+        <div class="calendar-grid">${cells}</div>
+      </div>
+
+      ${s.selectedDate ? renderTimeSlotCard() : ""}
+
+      <button type="button" class="btn-pill-auto" data-action="schedule-back">Vorige</button>
+    </div>
+  `;
+}
+
+function renderTimeSlotCard() {
+  const s = state.schedule;
+  const { y, m, d } = s.selectedDate;
+  const weekdayName = WEEKDAY_FULL[mondayIndex(new Date(y, m, d))];
+  const label = `Beschikbare tijden op ${weekdayName} ${d} ${MONTH_NAMES[m]} ${y}`;
+
+  if (s.requested) {
+    return `
+      <div class="calendar-card time-slot-card">
+        <p class="body-sm">Bedankt! We nemen contact met je op om het gesprek op ${weekdayName} ${d} ${MONTH_NAMES[m]} om ${s.selectedTime} te bevestigen.</p>
+      </div>
+    `;
+  }
+
+  return `
+    <div class="calendar-card time-slot-card">
+      <p class="time-slot-label">${label}</p>
+      <div class="time-slot-grid">
+        ${SCHEDULE_TIME_SLOTS.map(
+          (t) => `
+          <button type="button" class="choice-btn time-slot-btn ${s.selectedTime === t ? "is-selected" : ""}"
+            data-action="select-time-slot" data-time="${t}">${t}</button>
+        `
+        ).join("")}
+      </div>
+      <button type="button" class="btn-full schedule-confirm-btn" data-action="confirm-schedule" ${s.selectedTime ? "" : "disabled"}>Gesprek aanvragen</button>
+    </div>
+  `;
+}
+
+// ---------- Mail mijn resultaten (los scherm) ----------
+
+function renderEmailCapturePage() {
+  const s = state.emailCapture;
+  return `
+    <div class="app-shell">
+      <div class="page-logo">${logoHtml("ultramarine")}</div>
+      <h1 class="heading-lg">Mail mijn resultaten</h1>
+      <p class="body-md muted">Vul je e-mailadres in. Zodra deze koppeling live is ontvang je je uitslag automatisch per mail.</p>
+      <div class="question-card">
+        ${
+          s.sent
+            ? `<p class="body-sm">Bedankt! Zodra deze functionaliteit live is ontvang je je uitslag automatisch op ${escapeAttr(s.email)}.</p>`
+            : `
+          <input type="email" class="text-input" placeholder="jouw@email.nl" value="${escapeAttr(s.email)}" data-email-capture="1" />
+          <button type="button" class="btn-full" data-action="send-mail-capture">Mail mijn resultaten</button>
+        `
+        }
+      </div>
+      <button type="button" class="btn-pill-auto" data-action="email-capture-back">Vorige</button>
+    </div>
+  `;
+}
+
 // ---------- Navigatie ----------
 
 function canProceed(entry) {
-  // TIJDELIJK: validatie uitgeschakeld zodat je kan doorklikken zonder
-  // vragen in te vullen (voor testen). Originele logica hieronder bewaard
-  // in comments — haal de comment-tekens weg en verwijder de "return true"
-  // erboven om de echte validatie weer aan te zetten.
-  return true;
-  /*
   switch (entry.id) {
     case "intro":
       return ["inzet", "ervaring", "doel", "budget"].every((id) => state.intro[id]);
@@ -654,7 +830,6 @@ function canProceed(entry) {
     default:
       return true;
   }
-  */
 }
 
 function goNext() {
@@ -759,8 +934,61 @@ document.addEventListener("click", (e) => {
     return render();
   }
 
-  if (action === "send-mail-final") {
-    state.finalMailSent = true;
+  if (action === "goto-schedule") {
+    state.finalSubview = "schedule";
+    render();
+    return scrollTop();
+  }
+
+  if (action === "goto-email-capture") {
+    state.finalSubview = "email";
+    render();
+    return scrollTop();
+  }
+
+  if (action === "schedule-back" || action === "email-capture-back") {
+    state.finalSubview = null;
+    render();
+    return scrollTop();
+  }
+
+  if (action === "calendar-prev-month") {
+    const d = new Date(state.schedule.viewYear, state.schedule.viewMonth - 1, 1);
+    state.schedule.viewYear = d.getFullYear();
+    state.schedule.viewMonth = d.getMonth();
+    return render();
+  }
+
+  if (action === "calendar-next-month") {
+    const d = new Date(state.schedule.viewYear, state.schedule.viewMonth + 1, 1);
+    state.schedule.viewYear = d.getFullYear();
+    state.schedule.viewMonth = d.getMonth();
+    return render();
+  }
+
+  if (action === "select-calendar-date") {
+    state.schedule.selectedDate = {
+      y: state.schedule.viewYear,
+      m: state.schedule.viewMonth,
+      d: parseInt(el.dataset.day, 10),
+    };
+    state.schedule.selectedTime = null;
+    state.schedule.requested = false;
+    return render();
+  }
+
+  if (action === "select-time-slot") {
+    state.schedule.selectedTime = el.dataset.time;
+    return render();
+  }
+
+  if (action === "confirm-schedule") {
+    state.schedule.requested = true;
+    return render();
+  }
+
+  if (action === "send-mail-capture") {
+    state.emailCapture.sent = true;
     return render();
   }
 });
@@ -769,6 +997,9 @@ document.addEventListener("input", (e) => {
   const el = e.target;
   if (el.dataset && el.dataset.textIntro) {
     state.intro[el.dataset.textIntro] = el.value;
+  }
+  if (el.dataset && el.dataset.emailCapture) {
+    state.emailCapture.email = el.value;
   }
 });
 
