@@ -7,6 +7,23 @@ const BRAND = {
   wordmark: ["A", "Bigger", "Circle"],
 };
 
+// Vakjargon met korte uitleg. Vraagteksten worden automatisch op deze
+// termen gescand (zie findGlossaryTerm in app.js); bij een match krijgt die
+// vraag een info-icoontje met deze uitleg erbij.
+const GLOSSARY = [
+  { term: "KPI's", pattern: /\bKPI'?s\b/i, explanation: "Meetbare indicatoren waarmee je bepaalt of je marketingdoelen worden behaald." },
+  { term: "Community", pattern: /\bcommunity\b/i, explanation: "Een groep mensen die zich betrokken voelt bij een merk of creator en regelmatig interactie heeft." },
+  { term: "Tone of voice", pattern: /\btone of voice\b/i, explanation: "De manier waarop een merk communiceert, bijvoorbeeld persoonlijk, professioneel of humoristisch." },
+  { term: "Engagement", pattern: /\bengagement\b/i, explanation: "De betrokkenheid van mensen bij content, bijvoorbeeld via likes, reacties, shares en saves." },
+  { term: "Bereik", pattern: /\bbereik\b/i, explanation: "Het aantal unieke personen dat jouw content heeft gezien." },
+  { term: "Conversie", pattern: /\bconversies?\b/i, explanation: "Een gewenste actie die iemand uitvoert, zoals een aankoop, aanmelding of websitebezoek." },
+  { term: "Creatorstrategie", pattern: /\bcreator[\s-]?strategie\b/i, explanation: "Een plan waarin staat hoe een merk creators inzet om marketingdoelen te behalen." },
+  { term: "Creatorselectie", pattern: /\bcreator[\s-]?selectie\b/i, explanation: "Het kiezen van creators die passen bij het merk, de doelgroep en de marketingdoelen." },
+  { term: "Authenticiteit", pattern: /\bauthenticiteit\b/i, explanation: "De mate waarin content oprecht, geloofwaardig en natuurlijk overkomt." },
+  { term: "Creator-brand fit", pattern: /\bcreator[\s-]?brand[\s-]?fit\b/i, explanation: "De mate waarin een creator aansluit bij de identiteit, waarden en doelgroep van een merk." },
+  { term: "Platformkeuze", pattern: /\bplatform[\s-]?keuze\b/i, explanation: "Het bepalen welke socialmediakanalen het meest geschikt zijn om je doelgroep te bereiken." },
+];
+
 const WELCOME = {
   eyebrow: "Creator Quickscan",
   title: "Creator Quickscan",

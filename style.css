@@ -443,6 +443,57 @@ h2.heading-lg {
   color: var(--text);
 }
 
+.question-card {
+  position: relative;
+}
+.question-card:has(.info-icon) .question-text {
+  /* Ruimte vrijhouden zodat de grote, vetgedrukte vraagtekst niet onder het
+     icoontje rechtsboven doorloopt. */
+  padding-right: 34px;
+}
+.info-icon {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid var(--ultramarine);
+  background: var(--bblue);
+  color: var(--ultramarine);
+  /* Bewust een gewoon systeemlettertype (niet Obviously, niet cursief):
+     dat geeft een duidelijk herkenbare "i" met stip, zoals in het
+     voorbeeld — i.p.v. iets dat op een "l" lijkt. */
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  font-style: normal;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  cursor: default;
+}
+.info-explanation {
+  display: none;
+  background: var(--oat);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-top: 10px;
+  margin-bottom: 14px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.info-icon:hover + .info-explanation,
+.info-icon:focus-visible + .info-explanation {
+  display: block;
+}
+.info-explanation strong {
+  font-weight: 700;
+}
+
 .option-list {
   display: flex;
   gap: 10px;
@@ -478,6 +529,19 @@ h2.heading-lg {
 .choice-btn.is-disabled {
   opacity: 0.4;
   cursor: not-allowed;
+}
+.custom-answer-input {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.custom-answer-input::placeholder {
+  color: var(--text-muted);
+}
+.custom-answer-input:focus {
+  outline: none;
 }
 
 .scale-row {

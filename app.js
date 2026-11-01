@@ -24,6 +24,10 @@ const state = {
   mailSent: false,
   meetingRequested: false,
 
+  // Losse tekst die iemand intypt zodra die bij een vraag "Anders" kiest.
+  // Key = vraag-id (bv. "doel", "branche", "interesses"...).
+  customAnswers: {},
+
   // Vervolgschermen vanaf de allerlaatste pagina ("Plan nu een gesprek in!" /
   // "Mail mijn resultaten"). null = toon gewoon de laatste carrousel-pagina.
   finalSubview: null, // null | "schedule" | "email"
@@ -284,7 +288,7 @@ function renderIntroQuestion(q) {
     const selected = state.intro[q.id];
     return `
       <div class="question-card">
-        <h3 class="question-text">${q.question}</h3>
+        ${renderQuestionHeading(q.question)}
         <div class="option-list stacked">
           ${q.options
             .map(
@@ -295,13 +299,14 @@ function renderIntroQuestion(q) {
             )
             .join("")}
         </div>
+        ${selected === "anders" ? renderCustomAnswerInput(q.id) : ""}
       </div>
     `;
   }
   const value = state.intro[q.id] || "";
   return `
     <div class="question-card">
-      <h3 class="question-text">${q.question}</h3>
+      ${renderQuestionHeading(q.question)}
       <p class="optional-tag">Optioneel.</p>
       <input type="text" class="text-input" placeholder="${q.placeholder}" value="${escapeAttr(value)}"
         data-text-intro="${q.id}" />
@@ -334,7 +339,7 @@ function renderScaleQuestion(id, text, isTransparency) {
   const selected = isTransparency ? state.transparency : state.answers[id];
   return `
     <div class="question-card">
-      <h3 class="question-text">${text}</h3>
+      ${renderQuestionHeading(text)}
       <div class="scale-row">
         ${ANSWER_SCALE.map(
           (a) => `
@@ -368,7 +373,7 @@ function renderBrand() {
 function renderSingleChoiceCard(q, selected) {
   return `
     <div class="question-card">
-      <h3 class="question-text">${q.question}</h3>
+      ${renderQuestionHeading(q.question)}
       <p class="optional-tag">Kies 1 antwoord.</p>
       <div class="option-list stacked">
         ${q.options
@@ -380,6 +385,7 @@ function renderSingleChoiceCard(q, selected) {
           )
           .join("")}
       </div>
+      ${selected === "Anders" ? renderCustomAnswerInput(q.id) : ""}
     </div>
   `;
 }
@@ -387,7 +393,7 @@ function renderSingleChoiceCard(q, selected) {
 function renderMultiChoiceCard(q, selectedList) {
   return `
     <div class="question-card">
-      <h3 class="question-text">${q.question}</h3>
+      ${renderQuestionHeading(q.question)}
       <p class="optional-tag">Kies maximaal ${q.max}.</p>
       <div class="option-list wrap">
         ${q.options
@@ -401,6 +407,7 @@ function renderMultiChoiceCard(q, selectedList) {
           })
           .join("")}
       </div>
+      ${selectedList.includes("Anders") ? renderCustomAnswerInput(q.id) : ""}
     </div>
   `;
 }
@@ -876,6 +883,34 @@ function escapeAttr(str) {
   return String(str).replace(/&/g, "&amp;").replace(/"/g, "&quot;");
 }
 
+function findGlossaryTerm(text) {
+  return GLOSSARY.find((entry) => entry.pattern.test(text)) || null;
+}
+
+// Gedeelde vraagtitel voor alle vraagtypes (intro/secties/transparantie/
+// merkvragen). Als de tekst een vakterm uit de GLOSSARY bevat, krijgt de
+// vraag automatisch een info-icoontje met een uitklapbare, korte uitleg.
+function renderQuestionHeading(text) {
+  const match = findGlossaryTerm(text);
+  if (!match) {
+    return `<h3 class="question-text">${text}</h3>`;
+  }
+  return `
+    <h3 class="question-text">${text}</h3>
+    <button type="button" class="info-icon" aria-label="Uitleg: ${escapeAttr(match.term)}" tabindex="0">i</button>
+    <p class="info-explanation"><strong>${match.term}:</strong> ${match.explanation}</p>
+  `;
+}
+
+// Los invulveld dat verschijnt zodra iemand bij een vraag "Anders" kiest.
+function renderCustomAnswerInput(qid) {
+  const value = state.customAnswers[qid] || "";
+  return `
+    <input type="text" class="choice-btn custom-answer-input" placeholder="Typ hier je antwoord"
+      value="${escapeAttr(value)}" data-custom-answer="${qid}" />
+  `;
+}
+
 // ---------- Event delegation ----------
 
 document.addEventListener("click", (e) => {
@@ -1000,6 +1035,9 @@ document.addEventListener("input", (e) => {
   }
   if (el.dataset && el.dataset.emailCapture) {
     state.emailCapture.email = el.value;
+  }
+  if (el.dataset && el.dataset.customAnswer) {
+    state.customAnswers[el.dataset.customAnswer] = el.value;
   }
 });
 
