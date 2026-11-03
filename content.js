@@ -144,6 +144,13 @@ const ANSWER_SCALE = [
   { value: 3, label: "Altijd" },
 ];
 
+// "Niet van toepassing": telt niet mee in de score (bijlage XIII). Alleen
+// bij de stellingen waar dit in het prototype ook voorkomt (zie `nvt: true`
+// per stelling hieronder).
+const NVT_OPTION = { value: "nvt", label: "N.v.t." };
+
+const INSUFFICIENT_INFO_TEXT = "Onvoldoende informatie om een score te berekenen.";
+
 const SECTIONS = [
   {
     id: "doelstelling",
@@ -195,7 +202,7 @@ const SECTIONS = [
     statements: [
       { id: "authenticiteit_1", text: "De content die creators voor ons maken past bij de tone of voice van het merk." },
       { id: "authenticiteit_2", text: "De creator content biedt iets waardevols of interessants voor de doelgroep en komt niet alleen over als reclame." },
-      { id: "authenticiteit_3", text: "Onze huidige samenwerkingen met creators komen geloofwaardig en natuurlijk over bij de doelgroep." },
+      { id: "authenticiteit_3", text: "Onze huidige samenwerkingen met creators komen geloofwaardig en natuurlijk over bij de doelgroep.", nvt: true },
     ],
     tierDescriptions: {
       low: "Content van creators sluit nog niet altijd aan bij de tone of voice van het merk.",
@@ -235,9 +242,9 @@ const SECTIONS = [
     description:
       "In dit onderdeel wordt gekeken hoe je samenwerkt met creators en of de creatieve vrijheid hierbij wordt behouden.",
     statements: [
-      { id: "samenwerking_1", text: "Onze creators krijgen een duidelijke briefing over het merk en de content." },
-      { id: "samenwerking_2", text: "Onze creators krijgen voldoende vrijheid om content in hun eigen stijl te maken en te posten." },
-      { id: "samenwerking_3", text: "We nemen de creators mee in het denkproces van de content of campagne en staan open voor hun ideeën." },
+      { id: "samenwerking_1", text: "Onze creators krijgen een duidelijke briefing over het merk en de content.", nvt: true },
+      { id: "samenwerking_2", text: "Onze creators krijgen voldoende vrijheid om content in hun eigen stijl te maken en te posten.", nvt: true },
+      { id: "samenwerking_3", text: "We nemen de creators mee in het denkproces van de content of campagne en staan open voor hun ideeën.", nvt: true },
     ],
     tierDescriptions: {
       low: "Briefings en ruimte voor eigen inbreng van creators zijn nog beperkt.",
@@ -256,9 +263,9 @@ const SECTIONS = [
     description:
       "In dit onderdeel kijken we hoe je resultaten meet en gebruikt om jouw eigen creator marketing te verbeteren.",
     statements: [
-      { id: "meting_1", text: "We beoordelen de resultaten van elke creator samenwerking aan de hand van vooraf bepaalde KPI's." },
+      { id: "meting_1", text: "We beoordelen de resultaten van elke creator samenwerking aan de hand van vooraf bepaalde KPI's.", nvt: true },
       { id: "meting_2", text: "We kijken bij de beoordeling van de effectiviteit van de creator strategie verder dan alleen bereik, views en likes." },
-      { id: "meting_3", text: "We gebruiken resultaten uit eerdere samenwerkingen om volgende creator marketing samenwerkingen te verbeteren." },
+      { id: "meting_3", text: "We gebruiken resultaten uit eerdere samenwerkingen om volgende creator marketing samenwerkingen te verbeteren.", nvt: true },
     ],
     tierDescriptions: {
       low: "Resultaten worden nog weinig gemeten of gebruikt om bij te sturen.",

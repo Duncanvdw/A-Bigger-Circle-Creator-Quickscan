@@ -84,17 +84,33 @@ const CAROUSEL_VIEWS = ["score-tags", "profile-0", "profile-1", "profile-2", "ne
 
 // ---------- Scoring ----------
 
+function sectionValidStatements(section) {
+  // "N.v.t."-antwoorden tellen niet mee in de score (bijlage XIII).
+  return section.statements.filter((st) => {
+    const v = state.answers[st.id];
+    return v !== undefined && v !== "nvt";
+  });
+}
 function sectionPoints(section) {
-  return section.statements.reduce((sum, st) => sum + (state.answers[st.id] ?? 0), 0);
+  return sectionValidStatements(section).reduce((sum, st) => sum + state.answers[st.id], 0);
 }
 function sectionPercent(section) {
-  return (sectionPoints(section) / 9) * 100;
+  // Bij minder dan 2 geldige (niet-N.v.t.) antwoorden is er onvoldoende
+  // informatie om een score te berekenen (bijlage XIII).
+  const validCount = sectionValidStatements(section).length;
+  if (validCount < 2) return null;
+  return (sectionPoints(section) / (validCount * 3)) * 100;
 }
 function totalPoints() {
   return SECTIONS.reduce((sum, s) => sum + sectionPoints(s), 0);
 }
+function totalMaxPoints() {
+  return SECTIONS.reduce((sum, s) => sum + sectionValidStatements(s).length * 3, 0);
+}
 function totalPercent() {
-  return (totalPoints() / 63) * 100;
+  const max = totalMaxPoints();
+  if (max === 0) return 0;
+  return (totalPoints() / max) * 100;
 }
 function levelFor(percent) {
   return LEVELS.find((l) => percent <= l.max) || LEVELS[LEVELS.length - 1];
@@ -108,7 +124,9 @@ function fmtPercent(n) {
   return n.toLocaleString("nl-NL", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + "%";
 }
 function sectionsByScore() {
-  return SECTIONS.map((s) => ({ section: s, percent: sectionPercent(s) }));
+  return SECTIONS.map((s) => ({ section: s, percent: sectionPercent(s) })).filter(
+    (entry) => entry.percent !== null
+  );
 }
 function strongestTwo() {
   return [...sectionsByScore()].sort((a, b) => b.percent - a.percent).slice(0, 2);
@@ -337,7 +355,7 @@ function renderSection(section, index) {
     <h2 class="heading-lg">${section.title}</h2>
     <p class="body-md muted page-description">${section.description}</p>
     <div class="question-stack">
-      ${section.statements.map((st) => renderScaleQuestion(st.id, st.text)).join("")}
+      ${section.statements.map((st) => renderScaleQuestion(st.id, st.text, false, st.nvt)).join("")}
     </div>
   `;
 }
@@ -357,19 +375,22 @@ function renderTransparency() {
   `;
 }
 
-function renderScaleQuestion(id, text, isTransparency) {
+function renderScaleQuestion(id, text, isTransparency, hasNvt) {
   const selected = isTransparency ? state.transparency : state.answers[id];
+  const options = hasNvt ? [...ANSWER_SCALE, NVT_OPTION] : ANSWER_SCALE;
   return `
     <div class="question-card">
       ${renderQuestionHeading(text)}
-      <div class="scale-row">
-        ${ANSWER_SCALE.map(
-          (a) => `
+      <div class="scale-row ${hasNvt ? "scale-row-nvt" : ""}">
+        ${options
+          .map(
+            (a) => `
           <button type="button" class="choice-btn scale-btn ${selected === a.value ? "is-selected" : ""}"
             data-action="select-scale" data-stmt="${id}" data-transparency="${isTransparency ? "1" : "0"}"
             data-value="${a.value}">${a.label}</button>
         `
-        ).join("")}
+          )
+          .join("")}
       </div>
     </div>
   `;
@@ -597,6 +618,17 @@ function renderScoreTagsPage() {
         <h3 class="heading-xs breakdown-title">${SCORE_PAGE.breakdownTitle}</h3>
         ${SECTIONS.map((s) => {
           const p = sectionPercent(s);
+          if (p === null) {
+            return `
+              <div class="score-row">
+                <div class="score-row-top">
+                  <span class="highlight-title">${s.title}</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill" style="width:0%"></div></div>
+                <p class="body-sm">${INSUFFICIENT_INFO_TEXT}</p>
+              </div>
+            `;
+          }
           return `
             <div class="score-row">
               <div class="score-row-top">
@@ -963,7 +995,7 @@ document.addEventListener("click", (e) => {
   }
 
   if (action === "select-scale") {
-    const value = parseInt(el.dataset.value, 10);
+    const value = el.dataset.value === "nvt" ? "nvt" : parseInt(el.dataset.value, 10);
     if (el.dataset.transparency === "1") {
       state.transparency = value;
     } else {

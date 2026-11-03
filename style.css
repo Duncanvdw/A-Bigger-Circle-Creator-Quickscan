@@ -567,6 +567,9 @@ h2.heading-lg {
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
 }
+.scale-row-nvt {
+  grid-template-columns: repeat(5, 1fr);
+}
 .scale-btn {
   text-align: center;
   padding: 12px 6px;
