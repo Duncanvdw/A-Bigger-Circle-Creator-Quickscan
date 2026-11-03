@@ -417,6 +417,24 @@ h2.heading-lg {
 .dash-list.compact li {
   font-size: 13px;
 }
+.disclaimer-line {
+  /* Losstaande disclaimerregels (niet in een kaartje): klein en subtiel. */
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 0;
+}
+.welcome-note {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 0;
+}
+.welcome-note-bold {
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
+}
 
 /* ---------- Question cards ---------- */
 
@@ -636,6 +654,19 @@ h2.heading-lg {
 .highlight-card.opportunity {
   border-left-color: var(--care);
 }
+.highlight-card.transparency-warning {
+  /* Dit kaartje is geen scoreresultaat maar een vast, wettelijk
+     aandachtspunt — daarom een volledige rand i.p.v. alleen de linkerrand,
+     zodat het zich duidelijk onderscheidt van de andere kansen-kaartjes. */
+  border: 2px solid var(--care);
+  border-left-width: 2px;
+}
+.ai-disclaimer {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-muted);
+  margin: 4px 0 16px;
+}
 .highlight-title {
   font-family: var(--font-body);
   font-weight: 600;
@@ -733,6 +764,27 @@ h2.heading-lg {
 }
 .footer-label.oat {
   color: var(--on-blue);
+}
+.cover-page .footer-label {
+  /* Schuift iets omhoog zodat de disclaimerregel eronder past zonder overlap. */
+  bottom: 40px;
+}
+.cover-disclaimer {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text);
+}
+.cover-disclaimer.oat {
+  color: var(--on-blue-muted);
 }
 
 /* ---------- Resultaten-carrousel ---------- */

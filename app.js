@@ -130,9 +130,15 @@ function matchProfiles() {
   const chosenTags = new Set([...state.brand.merkwoorden, ...state.brand.contentsoort]);
   const chosenPlatforms = new Set(state.brand.platformen);
   const sizeTier = budgetToSizeTier(state.intro.budget);
+  const branche = state.brand.branche;
 
   const scored = CREATOR_PROFILES.map((profile) => {
     let score = 0;
+    // Branche weegt het zwaarst: dit is het belangrijkste onderscheid tussen
+    // merken, en zorgt dat verschillende branches ook echt andere profielen
+    // te zien krijgen in plaats van steeds dezelfde (zie Creator-brandfit en
+    // Communityfit in de AI-briefing).
+    if (branche && profile.branche && profile.branche.includes(branche)) score += 4;
     profile.tags.forEach((t) => {
       if (chosenTags.has(t)) score += 2;
     });
@@ -147,15 +153,24 @@ function matchProfiles() {
 
 function profileWhyText(profile) {
   const chosenTags = new Set([...state.brand.merkwoorden, ...state.brand.contentsoort]);
-  const matched = profile.tags.filter((t) => chosenTags.has(t));
-  let text = "";
-  if (matched.length) {
-    text += `Je koos voor ${matched.join(" en ").toLowerCase()}`;
-    if (state.brand.leeftijd) text += `, met een doelgroep van ${state.brand.leeftijd} jaar`;
-    text += ". ";
+  const matchedTags = profile.tags.filter((t) => chosenTags.has(t));
+  const brancheMatch = !!(state.brand.branche && profile.branche && profile.branche.includes(state.brand.branche));
+
+  // Context-zin varieert per profiel/antwoordcombinatie (branche weegt het
+  // zwaarst), zodat niet ieder profiel dezelfde algemene onderbouwing krijgt.
+  let context;
+  if (brancheMatch && matchedTags.length) {
+    context = `Als merk in ${state.brand.branche.toLowerCase()} met een voorkeur voor ${matchedTags[0].toLowerCase()} past dit profiel goed bij je.`;
+  } else if (brancheMatch) {
+    context = `Dit profiel is gericht op merken in ${state.brand.branche.toLowerCase()}.`;
+  } else if (matchedTags.length) {
+    context = `Je koos voor ${matchedTags.join(" en ").toLowerCase()}, en dat zie je terug in dit profiel.`;
+  } else {
+    context = `Dit profiel past bij een ${profile.type.toLowerCase()} op ${profile.platform}.`;
   }
-  text += `Een ${profile.type.toLowerCase()} op ${profile.platform} past goed bij jouw gewenste aanpak en budget.`;
-  return text;
+
+  const hookSentence = profile.whyHook ? `Deze creator ${profile.whyHook}.` : "";
+  return `${context} ${hookSentence}`.trim();
 }
 
 function answerTags() {
@@ -236,6 +251,8 @@ function renderWelcomePage() {
         <ul class="dash-list">
           ${WELCOME.benefits.map((b) => `<li>${b}</li>`).join("")}
         </ul>
+        <p class="body-sm welcome-note">${WELCOME.privacyNote}</p>
+        <p class="body-sm welcome-note welcome-note-bold">${WELCOME.aiDisclaimer}</p>
         <button type="button" class="btn-primary" data-action="start">${WELCOME.cta}</button>
       </section>
     </div>
@@ -332,6 +349,11 @@ function renderTransparency() {
     <div class="question-stack">
       ${renderScaleQuestion(TRANSPARENCY.id, TRANSPARENCY.text, true)}
     </div>
+    ${
+      state.transparency !== null && state.transparency !== undefined && state.transparency !== 3
+        ? `<p class="disclaimer-line">${TRANSPARENCY_WARNING.short}</p>`
+        : ""
+    }
   `;
 }
 
@@ -463,6 +485,12 @@ function renderResultsSummaryPage() {
       `
         )
         .join("")}
+      <div class="highlight-card opportunity transparency-warning">
+        <p class="highlight-title">${TRANSPARENCY_WARNING.title}</p>
+        <p class="body-sm">${TRANSPARENCY_WARNING.description}</p>
+      </div>
+
+      <p class="body-sm ai-disclaimer">${DISCLAIMERS.results}</p>
 
       <div class="hero-card cta-embed-card">
         ${logoHtml("oat")}
@@ -501,6 +529,7 @@ function renderCoverPage() {
         <p class="body-lg cover-subtitle">${COVER_PAGE.subtitle}</p>
       </div>
       <p class="footer-label oat">${FOOTER_LABEL}</p>
+      <p class="cover-disclaimer oat">${DISCLAIMERS.cover}</p>
     </div>
   `;
 }
@@ -529,7 +558,10 @@ function renderCarouselPage() {
           ? ""
           : /* Op "Jouw uitslag" staat de footer-tekst ín de linkerkolom (zie
                renderScoreTagsPage) zodat hij bij dat kortere linker deel
-               hoort, in plaats van los onderaan de hele (langere) pagina. */
+               hoort, in plaats van los onderaan de hele (langere) pagina.
+               De AI-disclaimer staat al op het blauwe tussenscherm
+               ("Jouw creatorprofielen en vervolgstappen", renderCoverPage)
+               en wordt hier niet herhaald. */
             `<p class="footer-label">${FOOTER_LABEL}</p>`
       }
       <button type="button" class="arrow-nav arrow-left" data-action="carousel-prev" aria-label="Vorige">&#8592;</button>
